@@ -28,8 +28,8 @@ a numeric vector containing the values of the response variable.
 a numeric matrix, with column names, containing the values of all covariates (exogenous and endogenous).
 }
   \item{z}{
-a numeric matrix, with column names, containing the values of all exogenous variables (covariates and instrumental 
-variables). Only required in case of endogenous explanatory variables.
+a numeric matrix, with column names, containing the values of all exogenous variables (covariates and external
+instrumental variables). Only required in case of endogenous explanatory variables.
 }
   \item{var.endog}{
 a numeric vector containing the values of the endogenous covariate (or of some transformation of it), which will 
@@ -40,7 +40,7 @@ Only required for this estimator.
 a logical value indicating whether all explanatory variables are assumed to be exogenous or not.
 }
   \item{lags}{
-a logical value indicating whether lags of \code{x} or  \code{z} should be used as instruments for \code{x}. 
+a logical value indicating whether the first lags of \code{x} or  \code{z} should be used as instruments for \code{x}. 
 Defaults to \code{TRUE} for the GMMww and GMMc estimators and to \code{FALSE} for the remaining estimators. 
 The \code{GMMcre} and \code{QMLcre} estimators do not admit lagged instruments.
 }
@@ -89,10 +89,10 @@ Arguments to pass to \link[stats]{nlminb}.
 }
 
 \details{
-\code{frmpd} computes the GMM estimators proposed in Ramalho and Ramalho (2015) 
+\code{frmpd} computes the GMM estimators proposed in Ramalho and Ramalho (2016) 
 for panel data fractional regression models with both time-variant and time-invariant
 unobserved heterogeneity and endogeneous covariates: GMMww, GMMc, GMMbgw, GMMpfe, GMMcre
-and GMMpre. In addition, \code{frmpd} also computes QMLpw, which was proposed by Papke
+and GMMpre. In addition, \code{frmpd} also computes QMLcre, which was proposed by Papke
 and Wooldridge (2008) and Wooldridge (2010). For overidentified models, \code{frmpd}
 calculates Hansen's J statistic.
 }
@@ -123,7 +123,11 @@ If \code{variance = TRUE} or \code{table = TRUE} and the algorithm converged suc
 }
 
 \references{
-Ramalho, E.A. and J.J.S. Ramalho (2015), "Exponential regression of panel data fractional response models".
+Papke, L. and Wooldridge, J.M. (2008), "Panel data methods for fractional response variables with an application to test pass rates", \emph{Journal of Econometrics}, 145(1-2), 121-233.
+
+Ramalho, E.A. and J.J.S. Ramalho (2016), "Exponential regression of fractional-response fixed-efects models with an application to firm capital structure", mimeo.
+
+Wooldridge, J.M. (2010), "Correlated random effects models with unbalanced panels", mimeo.
 }
 
 \author{
@@ -134,6 +138,7 @@ Joaquim J.S. Ramalho <jsr@uevora.pt>
 \code{\link[frm]{frm}}, for fitting standard cross-sectional fractional regression models.\cr
 \code{\link[frmhet]{frmhet}}, for fitting cross-sectional fractional regression models with unobserved heterogeneity.
 }
+
 \examples{
 id <- rep(1:50,each=5)
 time <- rep(1:5,50)

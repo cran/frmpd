@@ -1,1 +1,2 @@
 export(frmpd)
+importFrom("stats", "Gamma", "dlogis", "dnorm", "glm", "lm", "nlminb","pchisq", "plogis", "pnorm", "qlogis", "qnorm", "quasibinomial", "var")

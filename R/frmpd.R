@@ -50,7 +50,7 @@ frmpd.links <- function(link)
 
 frmpd.gi <- function(type,id,Ti,Hy,z,XB,link,at,at1)
 {
-	if(any(type==c("GMMc","GMMww","GMMbgw","GMMpfe")))
+	if(any(type==c("GMMc","GMMww","GMMbgw")) | (type=="GMMpfe" & !any(Hy==0)))
 	{
 		XBexp <- exp(XB)
 
@@ -66,13 +66,13 @@ frmpd.gi <- function(type,id,Ti,Hy,z,XB,link,at,at1)
 			XBexp.m <- rep(as.vector(by(XBexp[at],id,mean)),times=Ti)
 			u <- Hy[at]-(XBexp[at]/XBexp.m)*Hy.m
 		}
-			if(type=="GMMpfe")
+		if(type=="GMMpfe")
 		{
 			HyXBexp.m <- rep(as.vector(by(Hy[at]/XBexp[at],id,mean)),times=Ti)
 			u <- Hy[at]/(XBexp[at]*HyXBexp.m)-1
 		}
 	}
-	if(any(type==c("GMMpre","GMMcre")))
+	if(any(type==c("GMMpre","GMMcre")) | (type=="GMMpfe" & any(Hy==0)))
 	{
 		G2 <- frmpd.links(link)$G2(XB)
 		u <- Hy[at]/G2[at]-1
@@ -91,15 +91,15 @@ frmpd.gi <- function(type,id,Ti,Hy,z,XB,link,at,at1)
 
 frmpd.Gn <- function(type,x.exogenous,id,Ti,Hy,x,z,XB,link,at,at1,NT,k,p,z.in,u)
 {
-	if(any(type==c("GMMc","GMMww","GMMbgw","GMMpfe")))
+	if(any(type==c("GMMc","GMMww","GMMbgw")) | (type=="GMMpfe" & !any(Hy==0)))
 	{
 		XBexp <- exp(XB)
 
-		if(type=="GMMc") Gn <- t(z)%*%diag((XBexp[at1]/XBexp[at])*Hy[at])%*%(x[at1,]-x[at,])
+		if(type=="GMMc") Gn <- t(z*((XBexp[at1]/XBexp[at])*Hy[at]))%*%(x[at1,]-x[at,])
 		if(type=="GMMww")
 		{
 			uu <- -Hy/XBexp
-			Gn <- t(z)%*%(diag(uu[at])%*%x[at,]-diag(uu[at1])%*%x[at1,])
+			Gn <- t(z)%*%(uu[at]*x[at,]-uu[at1]*x[at1,])
 		}
 		if(type=="GMMbgw")
 		{
@@ -109,7 +109,7 @@ frmpd.Gn <- function(type,x.exogenous,id,Ti,Hy,x,z,XB,link,at,at1,NT,k,p,z.in,u)
 			XBexpX.m <- matrix(NA,nrow=NT,ncol=k)
 			for(j in 1:k) XBexpX.m[,j] <- rep(as.vector(by(XBexp[at]*x[at,j],id,mean)),times=Ti)
 
-			Gn <- -t(z)%*%diag(XBexp[at]*Hy.m/XBexp.m)%*%x[at,]+t(z)%*%((XBexp[at]*Hy.m/((XBexp.m)^2))*XBexpX.m)
+			Gn <- -t(z*(XBexp[at]*Hy.m/XBexp.m))%*%x[at,]+t(z)%*%((XBexp[at]*Hy.m/((XBexp.m)^2))*XBexpX.m)
 		}
 		if(type=="GMMpfe")
 		{
@@ -117,26 +117,26 @@ frmpd.Gn <- function(type,x.exogenous,id,Ti,Hy,x,z,XB,link,at,at1,NT,k,p,z.in,u)
 
 			HyXBexpX.m <- matrix(NA,nrow=NT,ncol=k)
 			for(j in 1:k) HyXBexpX.m[,j] <- rep(as.vector(by((Hy[at]/XBexp[at])*x[at,j],id,mean)),times=Ti)
-			Gn <- -t(z)%*%diag(Hy[at]/(XBexp[at]*HyXBexp.m))%*%x[at,]+t(z)%*%(Hy[at]/(XBexp[at]*(HyXBexp.m^2))*HyXBexpX.m)
+			Gn <- -t(z*(Hy[at]/(XBexp[at]*HyXBexp.m)))%*%x[at,]+t(z)%*%(Hy[at]/(XBexp[at]*(HyXBexp.m^2))*HyXBexpX.m)
 		}
 	}
-	if(any(type==c("GMMpre","GMMcre")))
+	if(any(type==c("GMMpre","GMMcre")) | (type=="GMMpfe" & any(Hy==0)))
 	{
 		G2 <- frmpd.links(link)$G2(XB)
 		g2 <- frmpd.links(link)$g2(XB)
 		bet <- Hy*g2/(G2^2)
-		Gn <- -t(z)%*%diag(bet[at])%*%x[at,]
+		Gn <- -t(z*bet[at])%*%x[at,]
 	}
 	if(type=="QMLcre")
 	{
 		yhat <- frmpd.links(link)$linkinv(XB)
 		g <- frmpd.links(link)$mu.eta(XB)
 		bet <- g^2/(yhat*(1-yhat))
-		Gn <- -t(z)%*%diag(bet)%*%x
+		Gn <- -t(z*bet)%*%x
 
 		if(x.exogenous==F)
 		{
-			G12 <- t(x)%*%diag(bet*p[k])%*%z.in
+			G12 <- t(x*(bet*p[k]))%*%z.in
 			G12[k,] <- G12[k,]-apply(u*z.in,2,sum)
 
 			G21 <- matrix(0,nrow=ncol(z.in),ncol=k)
@@ -420,6 +420,8 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 	if(!is.matrix(x)) stop("x is not a matrix")
 	if(!is.matrix(z)) stop("z is not a matrix")
 
+	if(any(is.na(id))) stop("id has missing values")
+	if(any(is.na(time))) stop("time has missing values")
 	if(any(is.na(y))) stop("y has missing values")
 	if(any(is.na(x))) stop("x has missing values")
 	if(any(is.na(z))) stop("z has missing values")
@@ -506,7 +508,7 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 	}
 
 	a <- 0
-	for(j in min(time):max(time))
+	for(j in sort(unique(time)))
 	{
 		a <- a+1
 		T.ord[time==j] <- a
@@ -521,12 +523,27 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 		}
 	}
 
+	if(type=="GMMpfe" & any(y==0))
+	{
+		D <- matrix(0,nrow=NT.ini,ncol=N.ini)
+		a <- 0
+		for(j in sort(unique(id)))
+		{
+			a <- a+1
+			D[id==j,a] <- 1
+			if(a==1) D.names <- paste("D",j,sep=".")
+			if(a>1) D.names <- c(D.names,paste("D",j,sep="."))
+		}
+
+	}
+
 	ord <- order(id,time)
 	id <- id[ord]
 	T.ord <- T.ord[ord]
 	y <- y[ord]
 	x <- cbind(x[ord,])
 	if(tdummies==T) td <- cbind(td[ord,])
+	if(type=="GMMpfe" & any(y==0)) D <- D[ord,]
 	z <- cbind(z[ord,])
 
 	if(any(type==c("GMMc","GMMww")) | lags==T)
@@ -554,6 +571,7 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 			y <- y[keep==T]
 			x <- cbind(x[keep==T,])
 			if(tdummies==T) td <- cbind(td[keep==T,])
+			if(type=="GMMpfe" & any(y==0)) D <- D[keep==T,]
 			z <- cbind(z[keep==T,])
 			at <- at[keep==T]
 			at1 <- at1[keep==T]
@@ -606,6 +624,15 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 	{
 		xa.names <- x.names
 		za.names <- z.names
+	}
+
+	if(type=="GMMpfe" & any(y==0))
+	{
+		x <- cbind(x,D)
+		z <- cbind(z,D[at,])
+		z.full <- cbind(z.full,D)
+		x.names <- c(x.names,D.names)
+		z.names <- c(z.names,D.names)
 	}
 
 	if(any(type==c("GMMcre","QMLcre")))
@@ -812,14 +839,15 @@ frmpd <- function(id,time,y,x,z,var.endog,x.exogenous=T,lags,start,type,GMMww.co
 				if(results$converged==T)
 				{
 					cat("1")
-					if(any(j==seq(50,100000,50))) cat("\n")
 
 					pres <- results$p
 					if(type=="QMLcre" & x.exogenous==F) pres <- c(pres,PIres)
 					pboot[j,] <- pres
 				}
 				else cat("0")
-			}
+
+				if(any(j==seq(50,100000,50))) cat("\n"
+)			}
 
 			p.var <- matrix(NA,nrow=length(x.names),ncol=length(x.names))
 			diag(p.var) <- apply(pboot,2,var,na.rm=T)
